@@ -1,0 +1,32 @@
+version: '3'
+
+services:
+  authentication_database:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - authentication_network
+  authentication_adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+    networks:
+      - authentication_network
+
+  authentication:
+    image: authentication_image
+    build:
+      dockerfile: ./Dockerfile
+      context: ./authentication
+    environment:
+      - JWT_SECRET=AckoCar123
+    depends_on:
+      - authentication_database
+    ports:
+      - "5002:5002"
+    networks:
+      - authentication_network
+
+networks:
+  authentication_network:
