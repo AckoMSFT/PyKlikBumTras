@@ -4,11 +4,15 @@ from configuration import Configuration
 from models import database, User, Role
 from sqlalchemy_utils import database_exists, create_database, drop_database
 from sqlalchemy import and_
+import re
 
 application = Flask(__name__)
 application.config.from_object(Configuration)
 database.init_app(application)
 jwt = JWTManager(application)
+
+email_regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
+
 
 @application.route('/register_customer', methods=['POST'])
 def register_customer():
@@ -24,18 +28,9 @@ def register_customer():
             message='Field forename is missing.'
         ), 400
 
-    if len(forename) > 256:
-        return jsonify(
-            message='Invalid forename.'
-        ), 400
-
     if not surname:
         return jsonify(
             message='Field surname is missing.'
-        ), 400
-    if len(surname) > 256:
-        return jsonify(
-            message='Invalid surname.'
         ), 400
 
     if not email:
@@ -43,14 +38,34 @@ def register_customer():
             message='Field email is missing.'
         ), 400
 
+    if not password:
+        return jsonify(
+            message='Field password is missing.'
+        ), 400
+
+    if len(forename) > 256:
+        return jsonify(
+            message='Invalid forename.'
+        ), 400
+
+    if len(surname) > 256:
+        return jsonify(
+            message='Invalid surname.'
+        ), 400
+
     if len(email) > 256:
         return jsonify(
             message='Invalid email.'
         ), 400
 
-    if not password:
+    if not re.fullmatch(email_regex, email):
         return jsonify(
-            message='Field password is missing.'
+            message='Invalid email.'
+        ), 400
+
+    if len(password) < 8:
+        return jsonify(
+            message='Invalid password.'
         ), 400
 
     if len(password) > 256:
@@ -98,18 +113,9 @@ def register_courier():
             message='Field forename is missing.'
         ), 400
 
-    if len(forename) > 256:
-        return jsonify(
-            message='Invalid forename.'
-        ), 400
-
     if not surname:
         return jsonify(
             message='Field surname is missing.'
-        ), 400
-    if len(surname) > 256:
-        return jsonify(
-            message='Invalid surname.'
         ), 400
 
     if not email:
@@ -117,14 +123,34 @@ def register_courier():
             message='Field email is missing.'
         ), 400
 
+    if not password:
+        return jsonify(
+            message='Field password is missing.'
+        ), 400
+
+    if len(forename) > 256:
+        return jsonify(
+            message='Invalid forename.'
+        ), 400
+
+    if len(surname) > 256:
+        return jsonify(
+            message='Invalid surname.'
+        ), 400
+
     if len(email) > 256:
         return jsonify(
             message='Invalid email.'
         ), 400
 
-    if not password:
+    if not re.fullmatch(email_regex, email):
         return jsonify(
-            message='Field password is missing.'
+            message='Invalid email.'
+        ), 400
+
+    if len(password) < 8:
+        return jsonify(
+            message='Invalid password.'
         ), 400
 
     if len(password) > 256:
@@ -170,19 +196,19 @@ def login():
             message='Field email is missing.'
         ), 400
 
-    if len(email) > 256:
-        return jsonify(
-            message='Invalid email.'
-        ), 400
-
     if not password:
         return jsonify(
             message='Field password is missing.'
         ), 400
 
-    if len(password) > 256:
+    if len(email) > 256:
         return jsonify(
-            message='Invalid password.'
+            message='Invalid email.'
+        ), 400
+
+    if not re.fullmatch(email_regex, email):
+        return jsonify(
+            message='Invalid email.'
         ), 400
 
     user = User.query.filter(
@@ -197,12 +223,14 @@ def login():
             message='Invalid credentials.'
         ), 400
 
+    role = Role.query.filter_by(id=user.role).first()
+
     additional_claims = {
         'forename': user.forename,
         'surname': user.surname,
         'email': user.email,
         'password': user.password,
-        'role': user.role
+        'roles': [role.name]
     }
 
     accessToken = create_access_token(
@@ -243,6 +271,8 @@ def delete():
 if __name__ == '__main__':
     # Bootstrap code
     # There is a race condition with connecting to MySQL - so need to retry
+    # TODO (acko): Rewrite me
+
     database.init_app(application)
     with application.app_context() as context:
         if not database_exists(application.config['SQLALCHEMY_DATABASE_URI']):
@@ -268,4 +298,4 @@ if __name__ == '__main__':
         else:
             print('Database has already been initialized.')
 
-    application.run(debug=True, host='0.0.0.0', port=5002)
+    application.run(debug=True, host='0.0.0.0', port=5000)

@@ -1,0 +1,10 @@
+DELETE FROM product_category;
+ALTER TABLE product_category AUTO_INCREMENT = 0;
+DELETE FROM order_product;
+ALTER TABLE order_product AUTO_INCREMENT = 0;
+DELETE FROM `order`;
+ALTER TABLE `order` AUTO_INCREMENT = 0;
+DELETE FROM product;
+ALTER TABLE product AUTO_INCREMENT = 0;
+DELETE FROM category;
+ALTER TABLE category AUTO_INCREMENT = 0;

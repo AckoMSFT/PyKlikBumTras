@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 MAX_LENGTH = 256
 database = SQLAlchemy()
 
-
+# TODO (acko): Rewrite me
 class User(database.Model):
     __tablename__ = 'users'
 

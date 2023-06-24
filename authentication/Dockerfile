@@ -1,7 +1,7 @@
 FROM python:3
 
-RUN mkdir -p /opt/src/authentication
-WORKDIR /opt/src/authentication
+RUN mkdir -p /opt/src/authentication_service
+WORKDIR /opt/src/authentication_service
 
 COPY ./authentication.py ./authentication.py
 COPY ./configuration.py ./configuration.py
@@ -12,6 +12,6 @@ RUN pip install -r ./requirements.txt
 
 EXPOSE 5002
 
-ENV PYTHONPATH="/opt/src/authentication"
+ENV PYTHONPATH="/opt/src/authentication_service"
 
 CMD ["python", "authentication.py"]

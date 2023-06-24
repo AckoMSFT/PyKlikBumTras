@@ -7,6 +7,7 @@ services:
       - MYSQL_ROOT_PASSWORD=root
     networks:
       - authentication_network
+
   authentication_adminer:
     image: adminer
     ports:
@@ -14,8 +15,8 @@ services:
     networks:
       - authentication_network
 
-  authentication:
-    image: authentication_image
+  authentication_service:
+    image: authentication_service_image
     build:
       dockerfile: ./Dockerfile
       context: ./authentication
@@ -24,9 +25,21 @@ services:
     depends_on:
       - authentication_database
     ports:
-      - "5002:5002"
+      - 5000:5000
     networks:
       - authentication_network
+
+  shop_database:
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - 3306:3306
+
+  shop_adminer:
+    image: adminer
+    ports:
+      - 8081:8080
 
 networks:
   authentication_network:
