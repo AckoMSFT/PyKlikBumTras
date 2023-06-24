@@ -78,14 +78,14 @@ def register_customer():
             message='Email already exists.'
         ), 400
 
-    role = Role.query.filter_by(name='customer').first().id
+    customer_role = Role.query.filter_by(name='customer').first()
 
     user = User(
         forename=forename,
         surname=surname,
         email=email,
         password=password,
-        role=role
+        roles=[customer_role]
     )
 
     database.session.add(user)
@@ -163,14 +163,14 @@ def register_courier():
             message='Email already exists.'
         ), 400
 
-    role = Role.query.filter_by(name='courier').first().id
+    courier_role = Role.query.filter_by(name='courier').first()
 
     user = User(
         forename=forename,
         surname=surname,
         email=email,
         password=password,
-        role=role
+        roles=[courier_role]
     )
 
     database.session.add(user)
@@ -223,14 +223,14 @@ def login():
             message='Invalid credentials.'
         ), 400
 
-    role = Role.query.filter_by(id=user.role).first()
+    roles = user.roles
 
     additional_claims = {
         'forename': user.forename,
         'surname': user.surname,
         'email': user.email,
         'password': user.password,
-        'roles': [role.name]
+        'roles': [role.name for role in roles]
     }
 
     accessToken = create_access_token(
@@ -251,51 +251,23 @@ def delete():
 
     email = additional_claims['email']
 
-    user = User.query.filter_by(email=email).first()
-    if not User:
+    deleted_user = User.query.filter_by(email=email).first()
+    if not deleted_user:
         return jsonify(
             message='Unknown user.'
         ), 400
 
-    # Calling delete 2x causes this?
-    # File "/usr/local/lib/python3.11/site-packages/sqlalchemy/orm/session.py", line 2054, in delete
-    # 2023-06-21T17:00:31.856818068Z     state = attributes.instance_state(instance)
-    # 2023-06-21T17:00:31.856821294Z             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    # 2023-06-21T17:00:31.856823889Z AttributeError: 'NoneType' object has no attribute '_sa_instance_state'
-    database.session.delete(user)
-    database.session.commit()
+    try:
+        database.session.delete(deleted_user)
+        database.session.commit()
+    except:
+        # 2023-06-24T15:18:19.706406091Z sqlalchemy.orm.exc.UnmappedInstanceError: Class 'builtins.NoneType' is not mapped
+        print('SQLAlchemy is funny.')
+        database.session.commit()
+
 
     return Response()
 
 
 if __name__ == '__main__':
-    # Bootstrap code
-    # There is a race condition with connecting to MySQL - so need to retry
-    # TODO (acko): Rewrite me
-
-    database.init_app(application)
-    with application.app_context() as context:
-        if not database_exists(application.config['SQLALCHEMY_DATABASE_URI']):
-            create_database(application.config['SQLALCHEMY_DATABASE_URI'])
-
-            ownerRole = Role(name='owner')
-            customerRole = Role(name='customer')
-            courierRole = Role(name='courier')
-
-            database.session.add_all([ownerRole, customerRole, courierRole])
-            database.session.commit()
-
-            scroogeMcDuck = User(
-                forename='Scrooge',
-                surname='McDuck',
-                email='onlymoney@gmail.com',
-                password='evenmoremoney',
-                role=ownerRole.id
-            )
-
-            database.session.add(scroogeMcDuck)
-            database.session.commit()
-        else:
-            print('Database has already been initialized.')
-
     application.run(debug=True, host='0.0.0.0', port=5000)

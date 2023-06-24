@@ -1,9 +1,10 @@
 FROM python:3
 
-RUN mkdir -p /opt/src/authentication_service
-WORKDIR /opt/src/authentication_service
+RUN mkdir -p /opt/src/owner_service
+WORKDIR /opt/src/owner_service
 
-COPY ./authentication.py ./authentication.py
+COPY ./role_check.py ./role_check.py
+COPY ./owner.py ./owner.py
 COPY ./configuration.py ./configuration.py
 COPY ./models.py ./models.py
 COPY ./requirements.txt ./requirements.txt
@@ -12,6 +13,6 @@ COPY ./bootstrap.sh ./bootstrap.sh
 
 RUN pip install -r ./requirements.txt
 
-ENV PYTHONPATH="/opt/src/authentication_service"
+ENV PYTHONPATH="/opt/src/owner_service"
 
 ENTRYPOINT ["./bootstrap.sh"]

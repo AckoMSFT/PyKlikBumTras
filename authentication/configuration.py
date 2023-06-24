@@ -1,10 +1,11 @@
 from datetime import timedelta
+from os import environ
 
-MYSQL_USERNAME = 'root'
-MYSQL_PASSWORD = 'root'
-MYSQL_HOST = 'authentication_database'
-MYSQL_DATABASE_NAME = 'authentication'
-JWT_SECRET_KEY = 'AckoCar123'
+MYSQL_USERNAME = environ.get('MYSQL_USERNAME') or 'root'
+MYSQL_PASSWORD = environ.get('MYSQL_PASSWORD') or 'root'
+MYSQL_HOST = environ.get('MYSQL_HOST') or 'authentication_database'
+MYSQL_DATABASE_NAME = environ.get('MYSQL_DATABASE_NAME') or 'authentication'
+JWT_SECRET_KEY = environ.get('JWT_SECRET_KEY') or 'AckoCar123'
 JWT_ACCESS_TOKEN_EXPIRY = timedelta(minutes=60)
 
 class Configuration:

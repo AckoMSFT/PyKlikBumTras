@@ -75,6 +75,12 @@ class Order(database.Model):
             'timestamp': self.timestamp.isoformat()
         }
 
+    def to_json_delivery(self):
+        return {
+            'id': self.id,
+            'email': self.email
+        }
+
 class OrderProduct(database.Model):
     __tablename__ = 'order_product'
 
@@ -82,8 +88,6 @@ class OrderProduct(database.Model):
     order_id = database.Column(database.Integer, database.ForeignKey('order.id'), nullable=False)
     product_id = database.Column(database.Integer, database.ForeignKey('product.id'), nullable=False)
     quantity = database.Column(database.Integer, nullable=False)
-    # No need to keep this here...
-    price = database.Column(database.Float, nullable=False)
 
     def to_json(self):
         product = Product.query.filter_by(id=self.product_id).first()

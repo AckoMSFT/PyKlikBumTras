@@ -7,11 +7,13 @@ services:
       - MYSQL_ROOT_PASSWORD=root
     networks:
       - authentication_network
+    volumes:
+      - authentication_database_volume:/var/lib/mysql
 
   authentication_adminer:
     image: adminer
     ports:
-      - 8080:8080
+      - 5004:8080
     networks:
       - authentication_network
 
@@ -21,6 +23,10 @@ services:
       dockerfile: ./Dockerfile
       context: ./authentication
     environment:
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_HOST=authentication_database
+      - MYSQL_DATABASE_NAME=authentication
       - JWT_SECRET=AckoCar123
     depends_on:
       - authentication_database
@@ -33,13 +39,81 @@ services:
     image: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=root
-    ports:
-      - 3306:3306
+    networks:
+      - shop_network
+    volumes:
+      - shop_database_volume:/var/lib/mysql
 
   shop_adminer:
     image: adminer
     ports:
-      - 8081:8080
+      - 5005:8080
+    networks:
+      - shop_network
+
+  owner_service:
+    image: owner_service_image
+    build:
+      dockerfile: ./owner_service_Dockerfile
+      context: ./shop
+    environment:
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_HOST=shop_database
+      - MYSQL_DATABASE_NAME=shop
+      - JWT_SECRET=AckoCar123
+      - SERVICE=owner
+    depends_on:
+      - shop_database
+    ports:
+      - 5001:5001
+    networks:
+      - shop_network
+
+  customer_service:
+    image: customer_service_image
+    build:
+      dockerfile: ./customer_service_Dockerfile
+      context: ./shop
+    environment:
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_HOST=shop_database
+      - MYSQL_DATABASE_NAME=shop
+      - JWT_SECRET=AckoCar123
+      - SERVICE=customer
+    depends_on:
+      - shop_database
+      - owner_service
+    ports:
+      - 5002:5002
+    networks:
+      - shop_network
+
+  courier_service:
+    image: courier_service_image
+    build:
+      dockerfile: ./courier_service_Dockerfile
+      context: ./shop
+    environment:
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_HOST=shop_database
+      - MYSQL_DATABASE_NAME=shop
+      - JWT_SECRET=AckoCar123
+      - SERVICE=courier
+    depends_on:
+      - shop_database
+      - owner_service
+    ports:
+      - 5003:5003
+    networks:
+      - shop_network
 
 networks:
   authentication_network:
+  shop_network:
+
+volumes:
+  authentication_database_volume:
+  shop_database_volume:

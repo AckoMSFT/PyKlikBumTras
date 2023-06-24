@@ -99,11 +99,7 @@ def order():
             ), 400
 
     email = get_jwt_identity()
-    #id = database.Column(database.Integer, primary_key=True)
-    #price = database.Column(database.Float, nullable=False, default=0)
-    #status = database.Column(database.Enum(OrderStatus), nullable=False)
-    #timestamp = database.Column(database.TIMESTAMP, nullable=False, default=datetime.datetime.now())
-    #email = database.Column(database.String(MAX_LENGTH), nullable=False)
+
     order = Order(
         price=0,
         status=OrderStatus.CREATED,
@@ -126,7 +122,6 @@ def order():
         order_product = OrderProduct(
             order_id=order.id,
             product_id=product_id,
-            price=product_price,
             quantity=product_quantity
         )
 
@@ -140,7 +135,7 @@ def order():
         id=order.id
     ), 200
 
-@application.route("/status", methods=["GET"])
+@application.route('/status', methods=['GET'])
 @role_check(valid_roles=['customer'])
 def status():
     email = get_jwt_identity()
@@ -152,6 +147,39 @@ def status():
             order.to_json() for order in orders
         ]
     )
+
+@application.route('/delivered', methods=['POST'])
+@role_check(valid_roles=['customer'])
+def delivered():
+    request_json = request.json
+
+    id = request_json.get('id', '')
+    if not id:
+        return jsonify(
+            message='Missing order id.'
+        ), 400
+
+    if not isinstance(id, int) or id < 0:
+        return jsonify(
+            message='Invalid order id.'
+        ), 400
+
+    order = Order.query.filter_by(id=id).first()
+    if not order:
+        return jsonify(
+            message='Invalid order id.'
+        ), 400
+
+    if order.status != OrderStatus.PENDING:
+        return jsonify(
+            message='Invalid order id.'
+        ), 400
+
+    order.status = OrderStatus.COMPLETE
+    database.session.commit()
+
+    return Response()
+
 if __name__ == '__main__':
     database.init_app(application)
 

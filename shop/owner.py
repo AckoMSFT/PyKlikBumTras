@@ -3,12 +3,10 @@ import io
 
 from flask import Flask, request, jsonify, Response
 from configuration import Configuration
-from models import database, Product, ProductCategory, Category
+from models import database, Product, ProductCategory, Category, Order, OrderProduct, OrderStatus
 from role_check import role_check
 from flask_jwt_extended import JWTManager
-from sqlalchemy_utils import database_exists, create_database, drop_database
-from sqlalchemy import and_
-import re
+from sqlalchemy import func
 
 application = Flask(__name__)
 application.config.from_object(Configuration)
@@ -122,6 +120,88 @@ def update():
             database.session.commit()
 
     return Response()
+
+@application.route('/product_statistics', methods=['GET'])
+@role_check(valid_roles=['owner'])
+def product_statistics():
+    statistics = []
+
+    query_sold = database.session.query(Product.name, func.sum(OrderProduct.quantity)).join(OrderProduct)\
+        .filter(OrderProduct.product_id == Product.id).filter(OrderProduct.quantity > 0).join(Order)\
+        .filter(OrderProduct.order_id == Order.id)\
+        .filter(Order.status == OrderStatus.COMPLETE).group_by(Product.id).all()
+
+    query_waiting = database.session.query(Product.name, func.sum(OrderProduct.quantity)).join(OrderProduct)\
+        .filter(OrderProduct.product_id == Product.id).filter(OrderProduct.quantity > 0).join(Order)\
+        .filter(OrderProduct.order_id == Order.id)\
+        .filter(Order.status != OrderStatus.COMPLETE).group_by(Product.id).all()
+
+    product_stats = {
+    }
+
+    for sold in query_sold:
+        product_name = sold[0]
+        product_sold = int(sold[1])
+
+        if product_name not in product_stats:
+            product_stats[product_name] = {
+                'sold': product_sold,
+                'waiting': 0,
+            }
+        else:
+            product_stats[product_name]['sold'] += product_sold
+
+    for waiting in query_waiting:
+        product_name = waiting[0]
+        product_waiting = int(waiting[1])
+
+        if product_name not in product_stats:
+            product_stats[product_name] = {
+                'sold': 0,
+                'waiting': product_waiting,
+            }
+        else:
+            product_stats[product_name]['waiting'] += product_waiting
+
+    for key, value in product_stats.items():
+        product_name = key
+        statistic = value
+        statistic['name'] = product_name
+        statistics.append(statistic)
+
+    return jsonify(
+        statistics=statistics,
+    ), 200
+
+@application.route('/category_statistics', methods=['GET'])
+@role_check(valid_roles=['owner'])
+def category_statistics():
+    categories = database.session.query(Category.name).all()
+
+    category_statistics = []
+    for category_name in categories:
+        name = category_name[0]
+        print(name)
+
+        count = database.session.query(func.sum(OrderProduct.quantity)).join(Product, Product.id == OrderProduct.product_id)\
+        .filter(OrderProduct.quantity > 0).join(Order, Order.id == OrderProduct.order_id)\
+        .join(ProductCategory, ProductCategory.product_id == Product.id)\
+            .join(Category, Category.id == ProductCategory.category_id)\
+            .filter(Category.name == name)\
+        .filter(Order.status == OrderStatus.COMPLETE).group_by(Category.name)\
+            .first()
+
+        if count:
+            category_statistics.append([name, int(count[0])])
+        else:
+            category_statistics.append([name, 0])
+
+    category_statistics = sorted(category_statistics, key=lambda x: (-x[1], x[0]))
+
+    return jsonify(
+        statistics=[x[0] for x in category_statistics]
+    ), 200
+
 
 if __name__ == '__main__':
     database.init_app(application)
