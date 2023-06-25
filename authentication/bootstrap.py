@@ -1,8 +1,9 @@
 from flask import Flask
 from flask_migrate import init, migrate, upgrade, Migrate
 from sqlalchemy_utils import database_exists, create_database
+
 from configuration import Configuration
-from models import database, User, Role, UserRole
+from models import database, User, Role
 
 application = Flask(__name__)
 application.config.from_object(Configuration)

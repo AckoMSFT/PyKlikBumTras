@@ -12,6 +12,8 @@ class Product(database.Model):
     id = database.Column(database.Integer, primary_key=True)
     name = database.Column(database.String(MAX_LENGTH), nullable=False)
     price = database.Column(database.Float, nullable=False)
+    sold = database.Column(database.Integer, nullable=False)
+    waiting = database.Column(database.Integer, nullable=False)
 
     categories = database.relationship(
         'Category',
@@ -49,7 +51,7 @@ class OrderStatus(enum.Enum):
     COMPLETE = 2
 
 class Order(database.Model):
-    __tablename__ = 'order'
+    __tablename__ = 'orders'
 
     id = database.Column(database.Integer, primary_key=True)
     price = database.Column(database.Float, nullable=False, default=0)
@@ -85,7 +87,7 @@ class OrderProduct(database.Model):
     __tablename__ = 'order_product'
 
     id = database.Column(database.Integer, primary_key=True)
-    order_id = database.Column(database.Integer, database.ForeignKey('order.id'), nullable=False)
+    order_id = database.Column(database.Integer, database.ForeignKey('orders.id'), nullable=False)
     product_id = database.Column(database.Integer, database.ForeignKey('product.id'), nullable=False)
     quantity = database.Column(database.Integer, nullable=False)
 

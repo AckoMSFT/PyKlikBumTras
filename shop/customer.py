@@ -116,6 +116,7 @@ def order():
 
         product = Product.query.filter_by(id=product_id).first()
         product_price = product.price
+        product.waiting += product_quantity
 
         order_price += product_quantity * product_price
 
@@ -174,6 +175,14 @@ def delivered():
         return jsonify(
             message='Invalid order id.'
         ), 400
+
+    order_products = OrderProduct.query.filter_by(order_id=order.id).all()
+    for order_product in order_products:
+        product = Product.query.filter_by(id=order_product.product_id).first()
+        product_quantity = order_product.quantity
+        product.sold += product_quantity
+        product.waiting -= product_quantity
+        database.session.flush()
 
     order.status = OrderStatus.COMPLETE
     database.session.commit()

@@ -1,19 +1,15 @@
-import csv
-import io
-
 from flask import Flask, request, jsonify, Response
-from configuration import Configuration
-from models import database, Product, ProductCategory, Category, Order, OrderStatus
-from role_check import role_check
 from flask_jwt_extended import JWTManager
-from sqlalchemy_utils import database_exists, create_database, drop_database
-from sqlalchemy import and_
-import re
+
+from configuration import Configuration
+from models import database, Order, OrderStatus
+from role_check import role_check
 
 application = Flask(__name__)
 application.config.from_object(Configuration)
 database.init_app(application)
 jwt = JWTManager(application)
+
 
 @application.route('/orders_to_deliver', methods=['GET'])
 @role_check(valid_roles=['courier'])
@@ -25,6 +21,7 @@ def orders_to_deliver():
             order.to_json_delivery() for order in orders
         ]
     )
+
 
 @application.route('/pick_up_order', methods=['POST'])
 @role_check(valid_roles=['courier'])
@@ -57,6 +54,7 @@ def pick_up_order():
     database.session.commit()
 
     return Response()
+
 
 if __name__ == '__main__':
     database.init_app(application)

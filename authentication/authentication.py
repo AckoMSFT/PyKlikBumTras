@@ -1,10 +1,11 @@
+import re
+
 from flask import Flask, request, jsonify, Response
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt
+from sqlalchemy import and_
+
 from configuration import Configuration
 from models import database, User, Role
-from sqlalchemy_utils import database_exists, create_database, drop_database
-from sqlalchemy import and_
-import re
 
 application = Flask(__name__)
 application.config.from_object(Configuration)
@@ -264,7 +265,6 @@ def delete():
         # 2023-06-24T15:18:19.706406091Z sqlalchemy.orm.exc.UnmappedInstanceError: Class 'builtins.NoneType' is not mapped
         print('SQLAlchemy is funny.')
         database.session.commit()
-
 
     return Response()
 

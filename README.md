@@ -62,3 +62,6 @@ http://127.0.0.1:5004/?server=authentication_database&username=root&db=authentic
 http://127.0.0.1:5005/?server=shop_database&username=root&db=shop&sql=DELETE%20FROM%20product_category%3B%0AALTER%20TABLE%20product_category%20AUTO_INCREMENT%20%3D%200%3B%0ADELETE%20FROM%20order_product%3B%0AALTER%20TABLE%20order_product%20AUTO_INCREMENT%20%3D%200%3B%0ADELETE%20FROM%20%60order%60%3B%0AALTER%20TABLE%20%60order%60%20AUTO_INCREMENT%20%3D%200%3B%0ADELETE%20FROM%20product%3B%0AALTER%20TABLE%20product%20AUTO_INCREMENT%20%3D%200%3B%0ADELETE%20FROM%20category%3B%0AALTER%20TABLE%20category%20AUTO_INCREMENT%20%3D%200%3B%0A
 
 IEPMetaMask123
+
+
+python main.py --type all --authentication-url http://127.0.0.1:5000 --jwt-secret AckoCar123 --roles-field roles --owner-role owner --customer-role customer --courier-role courier --with-authentication --owner-url http://127.0.0.1:5001 --customer-url http://127.0.0.1:5002 --courier-url http://127.0.0.1:5003

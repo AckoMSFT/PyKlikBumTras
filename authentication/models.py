@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 MAX_LENGTH = 256
 database = SQLAlchemy()
 
+
 class User(database.Model):
     __tablename__ = 'user'
 
@@ -18,11 +19,13 @@ class User(database.Model):
         backref=database.backref('user', lazy='dynamic')
     )
 
+
 class Role(database.Model):
     __tablename__ = 'role'
 
     id = database.Column(database.Integer, primary_key=True)
     name = database.Column(database.String(MAX_LENGTH), nullable=False, unique=True)
+
 
 class UserRole(database.Model):
     __tablename__ = 'user_role'

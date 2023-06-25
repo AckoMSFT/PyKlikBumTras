@@ -1,17 +1,20 @@
 import csv
 import io
 
+import requests
 from flask import Flask, request, jsonify, Response
+from flask_jwt_extended import JWTManager
+from sqlalchemy import func
+
 from configuration import Configuration
 from models import database, Product, ProductCategory, Category, Order, OrderProduct, OrderStatus
 from role_check import role_check
-from flask_jwt_extended import JWTManager
-from sqlalchemy import func
 
 application = Flask(__name__)
 application.config.from_object(Configuration)
 database.init_app(application)
 jwt = JWTManager(application)
+
 
 @application.route('/update', methods=['POST'])
 @role_check(valid_roles=['owner'])
@@ -94,7 +97,9 @@ def update():
 
         product = Product(
             name=product_name,
-            price=product_price
+            price=product_price,
+            sold=0,
+            waiting=0,
         )
 
         database.session.add(product)
@@ -121,19 +126,44 @@ def update():
 
     return Response()
 
+
 @application.route('/product_statistics', methods=['GET'])
 @role_check(valid_roles=['owner'])
 def product_statistics():
+    sparky_product_statistics = 'http://{ip}:{port}/{endpoint}'.format(
+        ip=Configuration.SPARKY_IP,
+        port=Configuration.SPARKY_PORT,
+        endpoint=Configuration.SPARKY_PRODUCT_STATISTICS
+    )
+    response = requests.get(sparky_product_statistics)
+    return response.text, response.status_code, response.headers.items()
+
+
+@application.route('/category_statistics', methods=['GET'])
+@role_check(valid_roles=['owner'])
+def category_statistics():
+    sparky_category_statistics = 'http://{ip}:{port}/{endpoint}'.format(
+        ip=Configuration.SPARKY_IP,
+        port=Configuration.SPARKY_PORT,
+        endpoint=Configuration.SPARKY_CATEGORY_STATISTICS
+    )
+    response = requests.get(sparky_category_statistics)
+    return response.text, response.status_code, response.headers.items()
+
+
+@application.route('/product_statistics_no_spark', methods=['GET'])
+@role_check(valid_roles=['owner'])
+def product_statistics_no_spark():
     statistics = []
 
-    query_sold = database.session.query(Product.name, func.sum(OrderProduct.quantity)).join(OrderProduct)\
-        .filter(OrderProduct.product_id == Product.id).filter(OrderProduct.quantity > 0).join(Order)\
-        .filter(OrderProduct.order_id == Order.id)\
+    query_sold = database.session.query(Product.name, func.sum(OrderProduct.quantity)).join(OrderProduct) \
+        .filter(OrderProduct.product_id == Product.id).filter(OrderProduct.quantity > 0).join(Order) \
+        .filter(OrderProduct.order_id == Order.id) \
         .filter(Order.status == OrderStatus.COMPLETE).group_by(Product.id).all()
 
-    query_waiting = database.session.query(Product.name, func.sum(OrderProduct.quantity)).join(OrderProduct)\
-        .filter(OrderProduct.product_id == Product.id).filter(OrderProduct.quantity > 0).join(Order)\
-        .filter(OrderProduct.order_id == Order.id)\
+    query_waiting = database.session.query(Product.name, func.sum(OrderProduct.quantity)).join(OrderProduct) \
+        .filter(OrderProduct.product_id == Product.id).filter(OrderProduct.quantity > 0).join(Order) \
+        .filter(OrderProduct.order_id == Order.id) \
         .filter(Order.status != OrderStatus.COMPLETE).group_by(Product.id).all()
 
     product_stats = {
@@ -173,9 +203,10 @@ def product_statistics():
         statistics=statistics,
     ), 200
 
-@application.route('/category_statistics', methods=['GET'])
+
+@application.route('/category_statistics_no_spark', methods=['GET'])
 @role_check(valid_roles=['owner'])
-def category_statistics():
+def category_statistics_no_spark():
     categories = database.session.query(Category.name).all()
 
     category_statistics = []
@@ -183,12 +214,13 @@ def category_statistics():
         name = category_name[0]
         print(name)
 
-        count = database.session.query(func.sum(OrderProduct.quantity)).join(Product, Product.id == OrderProduct.product_id)\
-        .filter(OrderProduct.quantity > 0).join(Order, Order.id == OrderProduct.order_id)\
-        .join(ProductCategory, ProductCategory.product_id == Product.id)\
-            .join(Category, Category.id == ProductCategory.category_id)\
-            .filter(Category.name == name)\
-        .filter(Order.status == OrderStatus.COMPLETE).group_by(Category.name)\
+        count = database.session.query(func.sum(OrderProduct.quantity)).join(Product,
+                                                                             Product.id == OrderProduct.product_id) \
+            .filter(OrderProduct.quantity > 0).join(Order, Order.id == OrderProduct.order_id) \
+            .join(ProductCategory, ProductCategory.product_id == Product.id) \
+            .join(Category, Category.id == ProductCategory.category_id) \
+            .filter(Category.name == name) \
+            .filter(Order.status == OrderStatus.COMPLETE).group_by(Category.name) \
             .first()
 
         if count:
